@@ -1,12 +1,22 @@
-import sys
-import os.path as osp
+r"""PyTorch Detection Training.
 
-sys.path.append(osp.dirname(osp.dirname(__file__)))
-sys.path.append(osp.join(osp.dirname(osp.dirname(__file__)), 'src', 'detection'))
-sys.path.append(osp.join(osp.dirname(osp.dirname(__file__)), 'src', 'detection', 'torchvision_ref'))
+To run in a multi-gpu environment, use the distributed launcher::
 
-from configs.path_cfg import MOTSYNTH_ROOT, MOTCHA_ROOT, OUTPUT_DIR
+    python -m torch.distributed.launch --nproc_per_node=$NGPU --use_env \
+        train.py ... --world-size $NGPU
 
+The default hyperparameters are tuned for training on 8 gpus and 2 images per gpu.
+    --lr 0.02 --batch-size 2 --world-size 8
+If you use different number of gpus, the learning rate should be changed to 0.02/8*$NGPU.
+
+On top of that, for training Faster/Mask R-CNN, the default hyperparameters are
+    --epochs 26 --lr-steps 16 22 --aspect-ratio-group-factor 3
+
+Also, if you train Keypoint R-CNN, the default hyperparameters are
+    --epochs 46 --lr-steps 36 43 --aspect-ratio-group-factor 3
+Because the number of images is smaller in the person keypoint subset of COCO,
+the number of epochs should be adapted so that we have the same number of iterations.
+"""
 import datetime
 import os
 import time
@@ -18,37 +28,51 @@ import torchvision
 import torchvision.models.detection
 import torchvision.models.detection.mask_rcnn
 import utils
-
+from coco_utils import get_coco, get_coco_kp
 from engine import train_one_epoch, evaluate
 from group_by_aspect_ratio import GroupedBatchSampler, create_aspect_ratio_groups
 
-from train import get_transform
 
 try:
-    from torchvision.prototype import models as PM
+    from torchvision import prototype
 except ImportError:
-    PM = None
+    prototype = None
 
-from mot_dataset import get_mot_dataset
-from maskrcnn import maskrcnn_resnet_fpn
-from configs.path_cfg import OUTPUT_DIR
 
-#get_motsyn_detection(root, image_set, transforms, min_size=25, min_vis = 0.25)
+def get_dataset(name, image_set, transform, data_path):
+    paths = {"coco": (data_path, get_coco, 91), "coco_kp": (data_path, get_coco_kp, 2)}
+    p, ds_fn, num_classes = paths[name]
+
+    ds = ds_fn(p, image_set=image_set, transforms=transform)
+    return ds, num_classes
+
+
+def get_transform(train, args):
+    if train:
+        return presets.DetectionPresetTrain(args.data_augmentation)
+    elif not args.prototype:
+        return presets.DetectionPresetEval()
+    else:
+        if args.weights:
+            weights = prototype.models.get_weight(args.weights)
+            return weights.transforms()
+        else:
+            return prototype.transforms.CocoEval()
+
+
 def get_args_parser(add_help=True):
     import argparse
 
     parser = argparse.ArgumentParser(description="PyTorch Detection Training", add_help=add_help)
 
-    parser.add_argument("--train-dataset", default="split_1_mini", type=str, help="dataset name")
-    parser.add_argument("--val-dataset", default="mot17", type=str, help="dataset name")
-
-
+    parser.add_argument("--data-path", default="/datasets01/COCO/022719/", type=str, help="dataset path")
+    parser.add_argument("--dataset", default="coco", type=str, help="dataset name")
     parser.add_argument("--model", default="maskrcnn_resnet50_fpn", type=str, help="model name")
     parser.add_argument("--device", default="cuda", type=str, help="device (Use cuda or cpu Default: cuda)")
     parser.add_argument(
         "-b", "--batch-size", default=2, type=int, help="images per gpu, the total batch size is $NGPU x batch_size"
     )
-    parser.add_argument("--epochs", default=15, type=int, metavar="N", help="number of total epochs to run")
+    parser.add_argument("--epochs", default=26, type=int, metavar="N", help="number of total epochs to run")
     parser.add_argument(
         "-j", "--workers", default=4, type=int, metavar="N", help="number of data loading workers (default: 4)"
     )
@@ -85,16 +109,13 @@ def get_args_parser(add_help=True):
         "--lr-gamma", default=0.1, type=float, help="decrease lr by a factor of lr-gamma (multisteplr scheduler only)"
     )
     parser.add_argument("--print-freq", default=20, type=int, help="print frequency")
-    parser.add_argument("--output-dir", default=osp.join(OUTPUT_DIR, 'detection'), type=str, help="path to save outputs")
+    parser.add_argument("--output-dir", default=".", type=str, help="path to save outputs")
     parser.add_argument("--resume", default="", type=str, help="path of checkpoint")
     parser.add_argument("--start_epoch", default=0, type=int, help="start epoch")
-    parser.add_argument("--aspect-ratio-group-factor", default=-1, type=int)
+    parser.add_argument("--aspect-ratio-group-factor", default=3, type=int)
     parser.add_argument("--rpn-score-thresh", default=None, type=float, help="rpn score threshold for faster-rcnn")
     parser.add_argument(
         "--trainable-backbone-layers", default=None, type=int, help="number of trainable layers of backbone"
-    )
-    parser.add_argument(
-        "--backbone", default='resnet50', type=str, help="ResNet backbone used"
     )
     parser.add_argument(
         "--data-augmentation", default="hflip", type=str, help="data augmentation policy (default: hflip)"
@@ -136,23 +157,12 @@ def get_args_parser(add_help=True):
 
     return parser
 
-def get_dataset(name, data_path, image_set, transform,  img_path=None):
-    if img_path is None:
-        img_path = data_path
-
-    if name == 'motsynth':
-        ds = get_mot_dataset(img_path, osp.join(data_path, 'comb_annotations', f'{image_set}.json'), 
-                transforms=transform)
-    
-    else:
-        ds = get_mot_dataset(img_path, osp.join(data_path, 'motcha_coco_annotations', f'{name.upper()}_train.json'), 
-                transforms=transform)
-
-    return ds, 2
 
 def main(args):
-    if args.weights and PM is None:
+    if args.prototype and prototype is None:
         raise ImportError("The prototype module couldn't be found. Please install the latest torchvision nightly.")
+    if not args.prototype and args.weights:
+        raise ValueError("The weights parameter works only in prototype mode. Please pass the --prototype argument.")
     if args.output_dir:
         utils.mkdir(args.output_dir)
 
@@ -161,10 +171,11 @@ def main(args):
 
     device = torch.device(args.device)
 
-    #dataset, num_classes = get_dataset('motsynth', MOTSYNTH_ROOT, args.train_dataset, get_transform(True, args))
-    dataset, num_classes = get_dataset('motsynth', MOTSYNTH_ROOT, args.train_dataset, get_transform(True, args),'/storage/user/brasoand/motsyn2')
-    dataset_test, _ = get_dataset(args.val_dataset, MOTCHA_ROOT, None, get_transform(False, args))
+    # Data loading code
+    print("Loading data")
 
+    dataset, num_classes = get_dataset(args.dataset, "train", get_transform(True, args), args.data_path)
+    dataset_test, _ = get_dataset(args.dataset, "val", get_transform(False, args), args.data_path)
 
     print("Creating data loaders")
     if args.distributed:
@@ -189,27 +200,16 @@ def main(args):
     )
 
     print("Creating model")
-
     kwargs = {"trainable_backbone_layers": args.trainable_backbone_layers}
-    
-    
     if "rcnn" in args.model:
         if args.rpn_score_thresh is not None:
             kwargs["rpn_score_thresh"] = args.rpn_score_thresh
-    if 'maskrcnn' in args.model:
-        kwargs['backbone_name']= args.backbone
-        model = maskrcnn_resnet_fpn(pretrained=args.pretrained, num_classes=num_classes, **kwargs)
-
+    if not args.prototype:
+        model = torchvision.models.detection.__dict__[args.model](
+            pretrained=args.pretrained, num_classes=num_classes, **kwargs
+        )
     else:
-        if not args.weights:
-            model = torchvision.models.detection.__dict__[args.model](
-                pretrained=args.pretrained, num_classes=num_classes, **kwargs
-            )
-        else:
-            model = PM.detection.__dict__[args.model](weights=args.weights, num_classes=num_classes, **kwargs)
-        
-
-        
+        model = prototype.models.detection.__dict__[args.model](weights=args.weights, num_classes=num_classes, **kwargs)
     model.to(device)
     if args.distributed and args.sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
@@ -244,7 +244,7 @@ def main(args):
             scaler.load_state_dict(checkpoint["scaler"])
 
     if args.test_only:
-        evaluate(model, data_loader_test, device=device, iou_types=['bbox'])
+        evaluate(model, data_loader_test, device=device)
         return
 
     print("Start training")
@@ -268,7 +268,7 @@ def main(args):
             utils.save_on_master(checkpoint, os.path.join(args.output_dir, "checkpoint.pth"))
 
         # evaluate after every epoch
-        evaluate(model, data_loader_test, device=device, iou_types=['bbox'])
+        evaluate(model, data_loader_test, device=device)
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
