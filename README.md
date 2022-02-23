@@ -1,31 +1,25 @@
 # MOTSynth Baselines
 This repository provides baseline implementations for object detection, segmentation and tracking on the MOTSynth dataset.
 
-
+Pretrained models and complete instructions coming soon!
 
 > ![Method Visualization](teaser_github.png)
 
 
 # Installation:
-See Install.MD
+TODO
 
 # Data Preparation:
-TODO: Download comb_annotations
+TODO
 
 # Object Detection:
-How to train
+TODO
 
 # ReID:
-How to train
+TODO
 
 # Multi-Object Tracking:
-Tracktor
-How to test
-
-
-TODO: MPNTrack
+TODO
 
 # Multi-Object Tracking and Segmentation:
-Explanation of baseline
-
-Command 
+TODO
