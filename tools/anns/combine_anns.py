@@ -38,6 +38,9 @@ def main(args):
     comb_anns  = {'images': [], 'annotations': [], 'categories': None, 'info': {}}
 
     for seq in tqdm.tqdm(seqs):
+        # 757, 629 are not provided in train sequences     
+        if seq == '757' or seq == '629':
+            continue
         ann_path = osp.join(args.motsynth_path, 'annotations',  f'{seq}.json')
         with open(ann_path) as f:
             seq_ann = json.load(f)
