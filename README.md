@@ -1,7 +1,9 @@
 # MOTSynth Baselines
 This repository provides baseline implementations for object detection, segmentation and tracking on the MOTSynth dataset.
 
-Pretrained models and complete instructions coming soon!
+
+Pretrained models and complete instructions will be released soon after the ECCV deadline (7th of March).
+
 
 > ![Method Visualization](teaser_github.png)
 
