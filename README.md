@@ -36,16 +36,6 @@ To produce results for MOT17 train, you can run the following:
 ```
 python tools/test_tracktor.py
 ```
-This model should yield the following results:
-TODO
-
-# Multi-Object Tracking and Segmentation:
-We provide a simple baseline for MOTS. We run Tracktor with our trained Mask R-CNN detector, and use Mask R-CNN's segmentation head to produce an segmentation mask for every output bounding box.
-
-To evaluate this model on MOTS20, you can run the following:
-```
-python tools/test_tracktor.py  mots.do_mots=True mots.mots20_only=True
-```
 This model should yield the following results on MOT17 train:
 ```
           IDF1   IDP   IDR  Rcll  Prcn  GT  MT  PT  ML    FP    FN IDs    FM  MOTA  MOTP IDt IDa IDm
@@ -58,6 +48,15 @@ MOT17-11 57.7% 70.4% 48.9% 63.0% 90.7%  75  23  22  30   607  3491  31    43 56.
 MOT17-13 39.9% 64.7% 28.8% 38.4% 86.2% 110  17  47  46   717  7168  88   151 31.5% 0.253  42  67  23
 OVERALL  49.7% 63.7% 40.8% 54.9% 85.7% 546 129 238 179 10244 50661 549  1076 45.3% 0.220 163 436  64
 ```
+
+# Multi-Object Tracking and Segmentation:
+We provide a simple baseline for MOTS. We run Tracktor with our trained Mask R-CNN detector, and use Mask R-CNN's segmentation head to produce an segmentation mask for every output bounding box.
+
+To evaluate this model on MOTS20, you can run the following:
+```
+python tools/test_tracktor.py  mots.do_mots=True mots.mots20_only=True
+```
+This model should yield the following results on MOTS20 train:
 
 # Person Re-Identification
 We treat MOTSynth and MOT17 as ReID datasets by sampling 1 in 60 frames and treating each pedestrian as a unique identity. We use [torchreid](https://github.com/KaiyangZhou/deep-person-reid/tree/master/torchreid)'s amazing work to train our models.
