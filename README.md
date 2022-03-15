@@ -5,7 +5,7 @@ Check out our:
 - [ICCV 2021 paper](https://openaccess.thecvf.com/content/ICCV2021/html/Fabbri_MOTSynth_How_Can_Synthetic_Data_Help_Pedestrian_Detection_and_Tracking_ICCV_2021_paper.html)
 - [5 min. video](https://www.youtube.com/watch?v=dc_Z1iCceL4)
 - [Dataset page](https://motchallenge.net/data/MOTSynth-MOT-CVPR22/) 
-- [Project Page](https://aimagelab.ing.unimore.it/imagelab/page.asp?IdPage=42)
+- [Project page](https://aimagelab.ing.unimore.it/imagelab/page.asp?IdPage=42)
 
 > ![Method Visualization](teaser_github.png)
 
