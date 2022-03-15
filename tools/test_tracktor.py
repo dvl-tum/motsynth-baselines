@@ -208,7 +208,7 @@ def main(module_name, name, seed, obj_detect_models, reid_models, mots,
                 seq_name = str(seq)
                 if 'MOT17' in seq_name:
                     seq_name = seq_name[:8]
-                    seq_name = seq_name .replace('MOT17', 'MOTS20')
+                    seq_name = seq_name.replace('MOT17', 'MOTS20')
                     
                 mots_out_file = osp.join(mots_output_dir, f'{seq_name}.txt')
                 seq_img_folder = osp.dirname(frame_data['img_path'][0])
@@ -237,5 +237,5 @@ def main(module_name, name, seed, obj_detect_models, reid_models, mots,
                             [str(s) for s in dataset if not s.no_gt and str(s) in eval_seqs],
                             generate_overall=True)
 
-    if mots['do_mots']:
+    if mots['do_mots'] and mot_accums:
         evaluate_mots(mots_output_dir)
