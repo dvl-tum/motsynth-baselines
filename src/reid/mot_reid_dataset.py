@@ -32,11 +32,7 @@ def anns2df(anns, img_dir):
         isnight = {ann['id']: imid2isnight[ann['image_id']] for ann in anns['annotations']}
 
     rows = []
-    for ann in tqdm.tqdm(anns['annotations']):
-        # TODO: Get rid of this
-        if ann['bbox'][2] > 1920 or ann['bbox'][3] > 1080:
-            continue
-        
+    for ann in tqdm.tqdm(anns['annotations']):        
         assert osp.exists(f"{img_dir}/{ann['id']}.png"), f"{img_dir}/{ann['id']}.png does not exist!!!"
         ##if not osp.exists(f"{img_dir}/{ann['id']}.png"): 
         #    continue

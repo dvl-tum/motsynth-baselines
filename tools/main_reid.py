@@ -184,7 +184,7 @@ def main():
 
     log_name = 'test.log' if cfg.test.evaluate else 'train.log'
     log_name += time.strftime('-%Y-%m-%d-%H-%M-%S')
-    sys.stdout = Logger(osp.join(OUTPUT_DIR, 'reid', cfg.data.save_dir, log_name))
+    sys.stdout = Logger(osp.join(OUTPUT_DIR, 'reid_logs', cfg.data.save_dir, log_name))
 
     print('Show configuration\n{}\n'.format(cfg))
     print('Collecting env info ...')

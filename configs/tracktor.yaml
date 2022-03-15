@@ -7,22 +7,12 @@ seed: 12345
 network: fpn
 
 mots:
-  do_mots: False
-  maskrcnn_model: /storage/user/brasoand/MOTSynth_train_1_trainable_layer_mini/model_4.pth
-  mots20_only: True
+  do_mots: False # determines whether segmentation masks are also generated during tracking
+  maskrcnn_model: maskrcnn_resnet50_fpn_epoch_10.pth # Mask RCNN checkpoint used to obtain masks. It is expected to be an absolute path or a rel path at ${OUTPUT_DIR}/models 
+  mots20_only: True # if mots.do_mots is set to True, determines whether masks are generated for all sequences or only those in MOTS20
 
-
-# frcnn
-# obj_detect_weights: output/frcnn/res101/mot_2017_train/180k/res101_faster_rcnn_iter_180000.pth
-# obj_detect_config: output/frcnn/res101/mot_2017_train/180k/sacred_config.yaml
-
-# fpn
-obj_detect_models: /storage/user/brasoand/MOTSynth_train_1_trainable_layer_mini/model_4.pth
-# obj_detect_model: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_20/model_epoch_27.model
-
-#reid_models: /usr/wiss/brasoand/motsynth-baselines/log/resnet50_fc512_motsyn4_softmax/model/model.pth.tar-5
-#reid_models: /storage/slurm/brasoand/motsynth_output/reid/r50_split_1_ep150.pth
-reid_models: /usr/wiss/brasoand/motsynth-baselines/log/resnet50_fc512_motsynth_split_3/model/model.pth.tar-95
+obj_detect_models: maskrcnn_resnet50_fpn_epoch_10.pth # Mask RCNN checkpoint used by Tracktor. It is expected to be an absolute path or rel path at ${OUTPUT_DIR}/models 
+reid_models: resnet50_fc512_reid_epoch_19.pth # ReID model checkpoint used by Tracktor. It is expected to be at ${OUTPUT_DIR}/models 
 
 interpolate: False
 # [False, 'debug', 'pretty']
@@ -41,7 +31,7 @@ frame_range:
 
 tracker:
   # FRCNN score threshold for detections
-  detection_person_thresh: 0.5
+  detection_person_thresh: 0.95 # Only modification over the original config. A high threshold is needed to avoid FPs
   # FRCNN score threshold for keeping the track alive
   regression_person_thresh: 0.5
   # NMS threshold for detection

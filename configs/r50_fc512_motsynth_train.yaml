@@ -4,13 +4,13 @@ model:
 
 data:
   type: 'image'
-  sources: ['motsynth_train_mini']
+  sources: ['motsynth_split_1_mini']
   targets: ['mot17']
   height: 256
   width: 128
   combineall: False
   transforms: ['random_flip']
-  save_dir: 'log/resnet50_fc512_motsynth_train_new_data'
+  save_dir: 'resnet50_fc512_motsynth_train'
 
 loss:
   name: 'softmax'
@@ -19,17 +19,13 @@ loss:
 
 train:
   optim: 'amsgrad'
-  #lr: 0.0006
-  lr: 0.0036
-  max_epoch: 120
-  #batch_size: 32
-  batch_size: 196
+  lr: 0.0009
+  max_epoch: 19
+  batch_size: 180
   fixbase_epoch: 5
-  #fixbase_epoch: 0
-  #open_layers: ['classifier']
   open_layers: ['fc', 'classifier']
   lr_scheduler: 'single_step'
-  stepsize: [60]
+  stepsize: [15]
 
 test:
   batch_size: 224

@@ -39,16 +39,15 @@ def get_args_parser(add_help=True):
 
     parser = argparse.ArgumentParser(description="PyTorch Detection Training", add_help=add_help)
 
-    parser.add_argument("--train-dataset", default="split_1_mini", type=str, help="dataset name")
+    parser.add_argument("--train-dataset", default="train", type=str, help="dataset name")
     parser.add_argument("--val-dataset", default="mot17", type=str, help="dataset name")
-
 
     parser.add_argument("--model", default="maskrcnn_resnet50_fpn", type=str, help="model name")
     parser.add_argument("--device", default="cuda", type=str, help="device (Use cuda or cpu Default: cuda)")
     parser.add_argument(
         "-b", "--batch-size", default=2, type=int, help="images per gpu, the total batch size is $NGPU x batch_size"
     )
-    parser.add_argument("--epochs", default=15, type=int, metavar="N", help="number of total epochs to run")
+    parser.add_argument("--epochs", default=10, type=int, metavar="N", help="number of total epochs to run")
     parser.add_argument(
         "-j", "--workers", default=4, type=int, metavar="N", help="number of data loading workers (default: 4)"
     )
@@ -85,7 +84,7 @@ def get_args_parser(add_help=True):
         "--lr-gamma", default=0.1, type=float, help="decrease lr by a factor of lr-gamma (multisteplr scheduler only)"
     )
     parser.add_argument("--print-freq", default=20, type=int, help="print frequency")
-    parser.add_argument("--output-dir", default=osp.join(OUTPUT_DIR, 'detection'), type=str, help="path to save outputs")
+    parser.add_argument("--output-dir", default='maskrcnn_training', type=str, help="path to save outputs")
     parser.add_argument("--resume", default="", type=str, help="path of checkpoint")
     parser.add_argument("--start_epoch", default=0, type=int, help="start epoch")
     parser.add_argument("--aspect-ratio-group-factor", default=-1, type=int)
@@ -153,7 +152,9 @@ def get_dataset(name, data_path, image_set, transform,  img_path=None):
 def main(args):
     if args.weights and PM is None:
         raise ImportError("The prototype module couldn't be found. Please install the latest torchvision nightly.")
+    
     if args.output_dir:
+        args.output_dir = osp.join(OUTPUT_DIR, 'detection_logs', args.output_dir)
         utils.mkdir(args.output_dir)
 
     utils.init_distributed_mode(args)
@@ -161,8 +162,7 @@ def main(args):
 
     device = torch.device(args.device)
 
-    #dataset, num_classes = get_dataset('motsynth', MOTSYNTH_ROOT, args.train_dataset, get_transform(True, args))
-    dataset, num_classes = get_dataset('motsynth', MOTSYNTH_ROOT, args.train_dataset, get_transform(True, args),'/storage/user/brasoand/motsyn2')
+    dataset, num_classes = get_dataset('motsynth', MOTSYNTH_ROOT, args.train_dataset, get_transform(True, args))
     dataset_test, _ = get_dataset(args.val_dataset, MOTCHA_ROOT, None, get_transform(False, args))
 
 

@@ -16,7 +16,6 @@ class UpdateIsCrowd(object):
             bbox = ann['bbox']
             bbox_too_small = max(bbox[-1],bbox[-2]) < self.min_size
 
-            #print("HALLO checking vis")
             if 'vis' in ann:
                 vis  = ann['vis']
             
@@ -29,10 +28,7 @@ class UpdateIsCrowd(object):
             not_vis = vis < self.min_vis
             target['annotations'][i]['iscrowd'] = max(ann['iscrowd'], int(bbox_too_small), int(not_vis))
 
-
         return image, target
-
-
 
 def get_mot_dataset(img_folder, ann_file, transforms, min_size=25, min_vis = 0.2):
     t = [UpdateIsCrowd(min_size=min_size, min_vis=min_vis), ConvertCocoPolysToMask()]

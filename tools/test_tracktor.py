@@ -79,12 +79,11 @@ def main(module_name, name, seed, obj_detect_models, reid_models, mots,
     np.random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
-    output_dir = osp.join(OUTPUT_DIR, module_name, name)
+    output_dir = osp.join(OUTPUT_DIR, 'tracktor_logs', module_name, name)
     sacred_config = osp.join(output_dir, 'sacred_config.yaml')
 
     if mots['do_mots']:
-        #assert tracker['private_detections'] and dataset.startswith('mot17')
-        mots_output_dir = osp.join(OUTPUT_DIR, module_name + '_mots', name)
+        mots_output_dir = osp.join(OUTPUT_DIR, 'tracktor_logs', module_name + '_mots', name)
         os.makedirs(mots_output_dir, exist_ok=True)
 
 
@@ -105,9 +104,12 @@ def main(module_name, name, seed, obj_detect_models, reid_models, mots,
     obj_detects = []
     for obj_detect_model in obj_detect_models:
         obj_detect = FRCNN_FPN(num_classes=2)
+        if not osp.exists(obj_detect_model):
+            obj_detect_model = osp.join(OUTPUT_DIR, 'models', obj_detect_model)
 
+        assert os.path.isfile(obj_detect_model)
         obj_detect_state_dict = torch.load(
-            obj_detect_model, map_location=lambda storage, loc: storage)
+            osp.join(OUTPUT_DIR, 'models', obj_detect_model), map_location=lambda storage, loc: storage)
         if 'model' in obj_detect_state_dict:
             obj_detect_state_dict = obj_detect_state_dict['model']
 
@@ -123,6 +125,9 @@ def main(module_name, name, seed, obj_detect_models, reid_models, mots,
 
     reid_networks = []
     for reid_model in reid_models:
+        if not osp.exists(reid_model):
+            reid_model = osp.join(OUTPUT_DIR, 'models', reid_model)
+
         assert os.path.isfile(reid_model)
         reid_network = FeatureExtractor(
             model_name='resnet50_fc512',
@@ -135,7 +140,11 @@ def main(module_name, name, seed, obj_detect_models, reid_models, mots,
     # Segmentation:
     if mots['do_mots']:
         mask_model = MaskPredictor(num_classes=2)
-        state_dict = torch.load(mots['maskrcnn_model'])['model']
+        mask_model_path = mots['maskrcnn_model']
+        if not osp.exists(mask_model_path):
+            mask_model_path = osp.join(OUTPUT_DIR, 'models', mask_model_path)
+
+        state_dict = torch.load(mask_model_path)['model']
         mask_model.load_state_dict(state_dict)
         mask_model.cuda()
         mask_model.eval()
