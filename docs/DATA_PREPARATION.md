@@ -149,7 +149,7 @@ rm $MOTSYNTH_ROOT/motsynth_reid_images.zip
 Alternatively, you can directly generate these images locally by running:
 ```
 # For MOT17
-python tools/anns/store_reid_imgs.py --ann-path $MOTCHA_ROOT/motcha_coco_annotations/MOT17-train.json
+python tools/anns/store_reid_imgs.py --ann-path $MOTCHA_ROOT/motcha_coco_annotations/MOT17_train.json
 
 # For MOTSynth
 python tools/anns/store_reid_imgs.py --ann-path $MOTSYNTH_ROOT/comb_annotations/train_mini.json
